@@ -1,127 +1,75 @@
 #include <iostream>
 #include <vector>
+
 using namespace std;
-struct Node {
-    long int sumic; // the sum of children and key
-    Node* l, * r;
-    long int key, prior;
-    Node() : l(nullptr), r(nullptr), sumic(0) {}
-    Node(long int key) : key(key), prior((rand() << 15) + rand()), l(nullptr), r(nullptr), sumic(key) {}
+
+struct segtree{
+    vector<long long> tree;
+    int size;
+    void init(int n){
+        size = 1;
+        while (size < n) size *= 2;
+        tree.assign(2 * size - 1, 0);
+    }
+
+    void set(int i, int v, int x, int lx, int rx){
+        if (rx - lx == 1){
+            tree[x] = v;
+            return;
+        }
+        int m = (lx + rx) / 2;
+        if (i < m){
+            set(i, v, 2 * x + 1, lx, m);
+        } else{
+            set(i, v, 2 * x + 2, m, rx);
+        }
+        tree[x] = tree[2 * x + 1] + tree[2 * x + 2];
+    }
+
+    void set(int i, int v){
+        set(i, v, 0, 0, size);
+    }
+
+    long long sum(int l, int r, int x, int lx, int rx){
+        if (l >= rx || lx >= r){
+            return 0;
+        }
+        if(lx >= l && rx <= r){
+            return tree[x];
+        }
+        int m = (lx + rx) / 2;
+        long long s1 = sum(l, r, 2 * x + 1, lx, m);
+        long long s2 = sum(l, r, 2 * x + 2, m, rx);
+        return s1 + s2;
+    }
+    long long sum(int l, int r){
+        return sum(l, r, 0, 0, size);
+    }
 };
-Node* tmp1, * tmp2, * tmp3;
-long int sum(Node* v) { return v ? v->sumic : 0; }
-void upd(Node* v) {
-    long int answer = v->key;
-    if (v->l != nullptr)
-        answer += sum(v->l);
-    if (v->r != nullptr)
-        answer += sum(v->r);
-    v->sumic = answer;
-}
 
-void split(Node* root, Node*& l, Node*& r, long int k) { // node, left child, right child, split for what
-    if (!root) {
-        l = nullptr;
-        r = nullptr;
-        return;
-    }
-    if (root->key < k) {
-        split(root->r, root->r, r, k);
-        l = root;
-        upd(l);
-    }
-    else {
-        split(root->l, l, root->l, k);
-        r = root;
-        upd(r);
-    }
-}
-void merg(Node*& root, Node* l, Node* r) {
-    if (!l || !r) {
-        return void(root = l ? l : r);
-    }
-    if (l->prior > r->prior) {
-        merg(l->r, l->r, r);
-        root = l;
-        upd(root);
-    }
-    else {
-        merg(r->l, l, r->l);
-        root = r;
-        upd(root);
-    }
-}
-bool fin(Node*& root, long int x) {
-    if (!root) {
-        return false;
-    }
-    if (root->key == x) {
-        return true;
-    }
-    if (root->key > x) {
-        return fin(root->l, x);
-    }
-    else {
-        return fin(root->r, x);
-    }
-}
-void inset(Node*& root, long int x) {
-    Node* ins = new Node(x);
-    if (!fin(root, ins->key)) {
-        split(root, tmp1, tmp2, x);
-        merg(root, tmp1, ins);
-        merg(root, root, tmp2);
-
-    }
-    upd(root);
-}
-typedef pair<Node*, Node*> Pair;
-long int sum_p(Node* root, long int l, long int r) {
-    Pair rq;
-    split(root, rq.first, rq.second, r);
-    Pair lq;
-    split(rq.first, lq.first, lq.second, l);
-    long int res = sum(lq.second);
-    merg(rq.first, lq.first, lq.second);
-    merg(root, rq.first, rq.second);
-    // merge
-    return res;
-}
 int main() {
-    vector<long int> ans;
-    long int n;
-    Node* S = new Node();
-    cin >> n;
-    long int prev_y = NULL;
-    for (long int i = 0; i < n; ++i) {
-        char com;
-        cin >> com;
-        if (com == '+') {
-            long int num;
-            cin >> num;
-            if (prev_y != NULL) {
-                long int input = (prev_y + num) % 1000000000;
-                inset(S, input);
-                prev_y = NULL;
-        
-            }
-            else {
-                inset(S, num);
-                
-            }
-        }
-        else {
-            long int l, r;
+    ios::sync_with_stdio(false);
+    int n, m;
+    cin >> n >> m;
+    segtree st;
+    st.init(n);
+    for (int i = 0; i < n; i++){
+        int x;
+        cin >> x;
+        st.set(i, x);
+    }
+    for(int t = 0; t < m; t++){
+        int c;
+        cin >> c;
+        if(c == 1){
+            int i, v;
+            cin >> i >> v;
+            st.set(i, v);
+        } else{
+            int l, r;
             cin >> l >> r;
-            r++;
-            prev_y = sum_p(S, l, r);
-            ans.push_back(prev_y);
+            cout << st.sum(l, r) << "\n";
         }
-        
     }
-    for (long int i : ans) {
-        cout << i << endl;
-    }
-
     return 0;
 }
