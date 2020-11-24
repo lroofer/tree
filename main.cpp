@@ -12,6 +12,21 @@ struct segtree{
         tree.assign(2 * size - 1, 0);
     }
 
+    void build(vector<int> &a, int x, int lx, int rx){
+        if(rx - lx == 1){
+            if (lx < a.size())
+                tree[x] = a[lx];
+        } else{
+            int m = (lx + rx) / 2;
+            build(a, 2 * x + 1, lx, m);
+            build(a, 2 * x + 2, m, rx);
+            tree[x] = tree[2 * x + 1] + tree[2 * x + 2];
+        }
+    }
+    void build(vector<int> &a){
+        init(a.size());
+        build(a, 0, 0, size);
+    }
     void set(int i, int v, int x, int lx, int rx){
         if (rx - lx == 1){
             tree[x] = v;
@@ -52,12 +67,9 @@ int main() {
     int n, m;
     cin >> n >> m;
     segtree st;
-    st.init(n);
-    for (int i = 0; i < n; i++){
-        int x;
-        cin >> x;
-        st.set(i, x);
-    }
+    vector<int> a(n);
+    for (int i = 0; i < n; ++i) cin >> a[i];
+    st.build(a);
     for(int t = 0; t < m; t++){
         int c;
         cin >> c;
